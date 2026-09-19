@@ -1,0 +1,27 @@
+rules:
+  - id: sql-injection-string-build
+    languages: [python]
+    severity: ERROR
+    message: >
+      A SQL query string is built using string concatenation or an f-string
+      before being passed to execute(). This allows SQL injection. Rewrite
+      as a parameterized query: pass placeholders in the SQL string and the
+      real values as a separate tuple argument to execute().
+    metadata:
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      category: security
+      owasp: "A03:2021 - Injection"
+    patterns:
+      - pattern-either:
+          - pattern: $CUR.execute("..." + ...)
+          - pattern: $CUR.execute(f"...")
+          - pattern: $CUR.execute("...".format(...))
+          - pattern: |
+              $SQL = "..." + ...
+              ...
+              $CUR.execute($SQL)
+          - pattern: |
+              $SQL = "...".format(...)
+              ...
+              $CUR.execute($SQL)
+      - pattern-not: $CUR.execute("...", ...)
