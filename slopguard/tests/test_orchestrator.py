@@ -24,3 +24,4 @@ def test_run_pipeline_skip_prove_writes_report(tmp_path_factory):
     assert data["blast_radius"] is not None
     assert len(data["blast_radius"]["nodes"]) >= 2
     assert data["fix"] is None
+    assert data["reverify"] is None

@@ -22,7 +22,7 @@ def main(argv: list[str] | None = None) -> int:
 
     run_p = sub.add_parser(
         "run",
-        help="Full spine: scan → blast radius → Red Team proofs → artifacts/report.json",
+        help="Spine: scan → blast → prove → optional --fix → reverify → report.json",
     )
     run_p.add_argument("target", nargs="?", default="demo-app")
     run_p.add_argument("--catalog", type=Path, default=None)
@@ -36,6 +36,11 @@ def main(argv: list[str] | None = None) -> int:
         "--skip-prove",
         action="store_true",
         help="Skip Red Team harnesses (scan+graph only)",
+    )
+    run_p.add_argument(
+        "--fix",
+        action="store_true",
+        help="Apply one known-good template for the top finding, then reverify",
     )
 
     args = parser.parse_args(argv)
@@ -67,14 +72,19 @@ def main(argv: list[str] | None = None) -> int:
             base_url=args.base_url,
             run_id=args.run_id,
             skip_prove=args.skip_prove,
+            fix=args.fix,
         )
         print(json.dumps(report, indent=2))
         print(f"\n# {pipeline_summary(report)}", file=sys.stderr)
         findings = report.get("findings") or []
+        rev = report.get("reverify") or {}
+        # After a successful fix loop, exit 0 when that issue is closed even if
+        # sibling findings remain (cap is one template).
+        if args.fix and rev.get("closed"):
+            return 0
         if not findings:
             return 0
-        # Exit 1 when issues remain (findings present); useful for CI-style hooks.
-        return 1 if findings else 0
+        return 1
 
     return 2
 

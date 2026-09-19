@@ -41,11 +41,18 @@ prove-sqli:
 prove-auth:
 	"$(PYTHON)" "$(REPO_ROOT)/harnesses/unauth_get.py" --base-url "$(BASE_URL)" --repo-root "$(REPO_ROOT)" --run-id "$(RUN_ID)"
 
-## Step 5 spine: scan → blast radius → proofs → artifacts/report.json
+## Step 5/6 spine: scan → blast → proofs → optional fix → reverify → report.json
 ## Requires demo-app reachable at BASE_URL (or use --skip-prove via make run-skip-prove)
-.PHONY: run run-skip-prove
+## Note: --fix mutates demo-app sources; restore from git after demos.
+.PHONY: run run-skip-prove run-fix run-fix-skip-prove
 run:
 	cd "$(REPO_ROOT)" && PYTHONPATH=. "$(PYTHON)" -m slopguard run demo-app --base-url "$(BASE_URL)" --run-id "$(RUN_ID)"
 
 run-skip-prove:
 	cd "$(REPO_ROOT)" && PYTHONPATH=. "$(PYTHON)" -m slopguard run demo-app --skip-prove --run-id "$(RUN_ID)"
+
+run-fix:
+	cd "$(REPO_ROOT)" && PYTHONPATH=. "$(PYTHON)" -m slopguard run demo-app --fix --base-url "$(BASE_URL)" --run-id "$(RUN_ID)"
+
+run-fix-skip-prove:
+	cd "$(REPO_ROOT)" && PYTHONPATH=. "$(PYTHON)" -m slopguard run demo-app --fix --skip-prove --run-id "$(RUN_ID)"
