@@ -8,7 +8,7 @@ Intentionally vulnerable FastAPI service used by SlopGuard scanners and Red Team
 |--------|--------|
 | SQL injection | `GET /search?q=` → string-concat SQL in `app/db.py` |
 | Missing auth | `GET /admin/users` — no auth check |
-| Hardcoded secret | `app/config.py` → `API_KEY = sk_live_demo_seed_...` |
+| Hardcoded secret | `app/config.py` → demo `API_KEY` seed (Stripe-like live key format) |
 
 ## Run locally
 

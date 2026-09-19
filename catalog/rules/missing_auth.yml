@@ -1,0 +1,20 @@
+rules:
+  - id: slopguard.fastapi-admin-route-no-auth
+    message: "Admin route exposed without an authentication dependency (CWE-306)."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      threat_id: missing_auth
+      cwe: "CWE-306"
+    patterns:
+      - pattern: |
+          @$APP.get($PATH)
+          def $FUNC(...):
+            ...
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: ".*/admin.*"
+      - pattern-not: |
+          @$APP.get($PATH)
+          def $FUNC(..., $AUTH: ..., ...):
+            ...

@@ -1,0 +1,7 @@
+title = "SlopGuard demo gitleaks config"
+
+[[rules]]
+id = "slopguard-stripe-like-live-key"
+description = "Hardcoded sk_live API key seed for SlopGuard demo"
+regex = '''sk_live_[0-9a-zA-Z_]{8,}'''
+keywords = ["sk_live_"]

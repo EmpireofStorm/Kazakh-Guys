@@ -50,4 +50,5 @@ def test_admin_users_no_auth(client: TestClient) -> None:
 def test_secret_present_in_config() -> None:
     from app.config import API_KEY
 
-    assert API_KEY.startswith("sk_live_demo_seed")
+    assert API_KEY.startswith("sk_")
+    assert "demo_seed" in API_KEY

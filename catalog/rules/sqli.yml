@@ -1,0 +1,18 @@
+rules:
+  - id: slopguard.python-sql-fstring-execute
+    message: "SQL query built with an f-string and passed to execute (CWE-89)."
+    languages: [python]
+    severity: ERROR
+    metadata:
+      threat_id: sql_injection
+      cwe: "CWE-89"
+    patterns:
+      - pattern-either:
+          - pattern: $CONN.execute(f"...{$X}...")
+          - pattern: $CONN.execute(f"...{$X}...", ...)
+          - patterns:
+              - pattern-inside: |
+                  $SQL = f"...{$X}..."
+                  ...
+                  $CONN.execute($SQL)
+              - pattern: $CONN.execute($SQL)

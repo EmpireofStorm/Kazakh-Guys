@@ -1,0 +1,31 @@
+catalog_version: "0.1.0"
+threats:
+  - id: sql_injection
+    class: injection
+    severity_default: high
+    detectors:
+      - tool: semgrep
+        config: catalog/rules/sqli.yml
+    fix_hints:
+      - parameterized_queries
+    teach_tags: [owasp_a03, juniors]
+
+  - id: missing_auth
+    class: broken_access_control
+    severity_default: high
+    detectors:
+      - tool: semgrep
+        config: catalog/rules/missing_auth.yml
+    fix_hints:
+      - require_auth_middleware
+    teach_tags: [owasp_a01, juniors]
+
+  - id: secrets_in_repo
+    class: credential_exposure
+    severity_default: critical
+    detectors:
+      - tool: gitleaks
+        config: catalog/gitleaks.toml
+    fix_hints:
+      - rotate_and_gitignore
+    teach_tags: [secrets, juniors]
