@@ -6,6 +6,9 @@ threats:
     detectors:
       - tool: semgrep
         config: catalog/rules/sqli.yml
+    proof:
+      harness: harnesses/sqli_http.py
+      expect_breached_exit: 0
     fix_hints:
       - parameterized_queries
     teach_tags: [owasp_a03, juniors]
@@ -16,6 +19,9 @@ threats:
     detectors:
       - tool: semgrep
         config: catalog/rules/missing_auth.yml
+    proof:
+      harness: harnesses/unauth_get.py
+      expect_breached_exit: 0
     fix_hints:
       - require_auth_middleware
     teach_tags: [owasp_a01, juniors]
@@ -26,6 +32,7 @@ threats:
     detectors:
       - tool: gitleaks
         config: catalog/gitleaks.toml
+    proof: null
     fix_hints:
       - rotate_and_gitignore
     teach_tags: [secrets, juniors]
