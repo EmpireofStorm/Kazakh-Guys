@@ -1,0 +1,6 @@
+services:
+  demo-app:
+    build: ./demo-app
+    ports:
+      - "8000:8000"
+    # Intentionally vulnerable sandbox for SlopGuard only.
