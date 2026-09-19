@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from slopguard.catalog import load_catalog, repo_root
+from slopguard.graph.scope import enrich_scan_report
 from slopguard.models import Finding
 from slopguard.tools.gitleaks import run_gitleaks
 from slopguard.tools.semgrep import run_semgrep
@@ -35,5 +36,15 @@ def scan_target(target: Path, catalog_path: Path | None = None) -> list[Finding]
     return findings
 
 
+def scan_report(target: Path, catalog_path: Path | None = None) -> dict:
+    """Run scanners and attach blast_radius for the top finding."""
+    findings = scan_target(target, catalog_path)
+    return enrich_scan_report(target.resolve(), findings)
+
+
 def findings_to_json(findings: list[Finding]) -> str:
     return json.dumps([f.to_dict() for f in findings], indent=2)
+
+
+def report_to_json(report: dict) -> str:
+    return json.dumps(report, indent=2)
