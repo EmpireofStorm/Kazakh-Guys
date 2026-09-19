@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orbit — Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/hud.css" />
+</head>
+<body class="orbit-body">
+  <div class="frame-corner tl"></div>
+  <div class="frame-corner tr"></div>
+  <div class="frame-corner bl"></div>
+  <div class="frame-corner br"></div>
+  <div id="scene"></div>
+  <div id="labels"></div>
+  <header class="topbar">
+    <div class="brand">MAP<small>what a change would break</small></div>
+    <nav class="nav">
+      <a href="index.html">Mission Control</a>
+      <a href="security.html">Security</a>
+      <a class="active" href="orbit.html">Map</a>
+    </nav>
+  </header>
+  <aside class="panel right-panel orbit-hud">
+    <div id="hop-log">
+      <div class="kicker">Live track</div>
+      <p id="hop-step">Click a node.</p>
+      <p class="muted" id="hop-why">Red = would break. Amber = nearby.</p>
+    </div>
+    <h2 id="mod-title">Pick a file</h2>
+    <p class="muted" id="mod-paths"></p>
+    <div id="hazard-box" class="hidden">
+      <p class="sev critical" id="finding-sev"></p>
+      <p id="finding-desc"></p>
+      <div class="diff" id="patch"></div>
+    </div>
+    <pre id="hud-code" class="hud-code hidden"></pre>
+    <div class="actions">
+      <button class="primary" id="run-bfs" type="button" disabled>Check impact</button>
+      <button class="ok" id="apply" type="button" disabled>Change the code</button>
+      <button id="accept-risk" type="button" disabled>Change anyway</button>
+    </div>
+    <p class="muted" id="apply-hint">Check first. You still approve before anything ships.</p>
+    <section class="hidden" id="readout">
+      <h2>Result</h2>
+      <div class="readout-row"><span>Started at</span><span id="ro-origin">—</span></div>
+      <div class="readout-row red"><span>Would break</span><span id="ro-red">—</span></div>
+      <div class="readout-row amber"><span>Nearby</span><span id="ro-amber">—</span></div>
+      <div class="readout-row"><span>Other files</span><span id="ro-dim">—</span></div>
+      <p class="muted" id="ro-list"></p>
+    </section>
+  </aside>
+  <div class="modal-back hidden" id="risk-modal">
+    <div class="modal">
+      <h2>Change anyway</h2>
+      <p class="muted">Why is this OK? Still only a draft.</p>
+      <textarea id="risk-note" placeholder="Short reason…"></textarea>
+      <div class="actions">
+        <button class="ok" id="risk-ok" type="button">Change anyway</button>
+        <button id="risk-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-back hidden" id="pr-modal">
+    <div class="modal">
+      <h2>Draft change</h2>
+      <p class="muted" id="pr-id"></p>
+      <div class="diff" id="pr-body"></div>
+      <div class="actions">
+        <a class="nav" id="pr-back" href="security.html" style="display:inline-block">Return to Security</a>
+        <button id="pr-close" type="button">Stay in universe</button>
+      </div>
+    </div>
+  </div>
+  <div id="scan-thoughts" class="scan-thoughts hidden">
+    <div class="kicker">GraphDev live</div>
+    <p id="scan-thoughts-node"></p>
+    <p id="scan-thoughts-text"></p>
+  </div>
+  <section class="code-stage hidden" id="code-stage">
+    <div class="code-stage-bar">
+      <button type="button" id="code-close" aria-label="Close code">×</button>
+      <span id="code-mod"></span>
+      <div class="code-tabs" id="code-tabs"></div>
+    </div>
+    <pre id="code-body"></pre>
+  </section>
+  <section class="panel agent-log hidden" id="agent-log"></section>
+  <div class="prompt-dock">
+    <textarea id="agent-prompt" rows="2" placeholder="Ask about a file…"></textarea>
+    <button class="primary" id="agent-send" type="button">Send</button>
+  </div>
+  <div class="ticker"><span id="tick">Click a node</span><b id="tick-state">IDLE</b></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sources.js"></script>
+  <script src="js/graph.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="js/crew-ui.js"></script>
+  <script src="js/agent-client.js"></script>
+  <script src="js/sql-loop.js"></script>
+  <script src="js/orbit.js"></script>
+</body>
+</html>

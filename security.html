@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orbit — Security</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/hud.css" />
+</head>
+<body>
+  <div class="frame-corner tl"></div>
+  <div class="frame-corner tr"></div>
+  <div class="frame-corner bl"></div>
+  <div class="frame-corner br"></div>
+  <header class="topbar">
+    <div class="brand">SECURITY<small>find issues</small></div>
+    <nav class="nav">
+      <a href="index.html">Mission Control</a>
+      <a class="active" href="security.html">Security</a>
+      <a href="orbit.html">Map</a>
+    </nav>
+  </header>
+  <aside class="panel left-panel">
+    <h2>What to check</h2>
+    <div class="cats" id="cats"></div>
+    <label class="radar-switch"><input type="checkbox" id="radar-toggle" /> Show radar</label>
+    <div class="actions">
+      <button class="primary" id="run-scan" type="button">Run check</button>
+    </div>
+  </aside>
+  <section class="panel right-panel">
+    <h2>Findings</h2>
+    <p class="muted" id="findings-empty">Nothing yet. Pick a check and run it.</p>
+    <div id="findings"></div>
+  </section>
+  <section class="panel agent-log" id="agent-log"></section>
+  <div class="prompt-dock prompt-dock-security">
+    <textarea id="agent-prompt" rows="2" placeholder="Try: run sql injector"></textarea>
+    <button class="primary" id="agent-send" type="button">Send</button>
+  </div>
+  <div class="ticker"><span id="tick">Pick a check</span><b id="tick-state">IDLE</b></div>
+  <script src="js/data.js"></script>
+  <script src="js/sources.js"></script>
+  <script src="js/crew-ui.js"></script>
+  <script src="js/radar.js"></script>
+  <script src="js/agent-client.js"></script>
+  <script src="js/sql-loop.js"></script>
+  <script src="js/security.js"></script>
+</body>
+</html>

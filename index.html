@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mission Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/hud.css" />
+</head>
+<body class="mission-body lobby-body">
+  <div id="scene" class="lobby-scene"></div>
+  <div id="labels"></div>
+
+  <header class="lobby-top">
+    <span><span class="lobby-hub">Hub</span> <span class="lobby-sep">|</span> <b>Mission Control · Crew map</b></span>
+    <span class="lobby-live"><i></i> Live — <span id="clock">T+00:00</span></span>
+  </header>
+
+  <aside class="lobby-report">
+    <div class="kicker">Rooms</div>
+    <p>Security — find issues</p>
+    <p>GraphDev — see what a fix would break</p>
+  </aside>
+
+  <div class="lobby-bar">
+    <span id="lobby-count">2 rooms</span>
+    <button type="button" class="lobby-enter" id="launch">Enter GraphDev</button>
+  </div>
+
+  <section class="panel agent-log hidden" id="agent-log"></section>
+  <div class="prompt-dock prompt-dock-mission">
+    <textarea id="agent-prompt" rows="6" placeholder="Try: run sql injector"></textarea>
+    <button class="dispatch-btn" id="agent-send" type="button">Dispatch</button>
+  </div>
+  <div class="ticker"><span>Drag · zoom · click a room</span><b id="tick-state">IDLE</b></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sources.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="js/crew-ui.js"></script>
+  <script src="js/agent-client.js"></script>
+  <script src="js/sql-loop.js"></script>
+  <script src="js/mission.js"></script>
+</body>
+</html>
