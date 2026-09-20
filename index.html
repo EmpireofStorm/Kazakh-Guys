@@ -3,45 +3,225 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mission Control</title>
+  <title>Orbit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/hud.css" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/home.css" />
 </head>
-<body class="mission-body lobby-body">
-  <div id="scene" class="lobby-scene"></div>
-  <div id="labels"></div>
+<body class="corp-home">
+  <section class="hero">
+    <video class="hero-video" autoplay muted loop playsinline aria-hidden="true">
+      <source src="media/hero-earth.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-fade"></div>
 
-  <header class="lobby-top">
-    <span><span class="lobby-hub">Hub</span> <span class="lobby-sep">|</span> <b>Mission Control · Crew map</b></span>
-    <span class="lobby-live"><i></i> Live — <span id="clock">T+00:00</span></span>
-  </header>
+    <div class="sat sat-left" aria-hidden="true">
+      <svg viewBox="0 0 420 280" fill="none">
+        <defs>
+          <linearGradient id="wing-l" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#7ef0ff" stop-opacity="0.22" />
+            <stop offset="55%" stop-color="#3aa8c4" stop-opacity="0.08" />
+            <stop offset="100%" stop-color="#7ef0ff" stop-opacity="0.02" />
+          </linearGradient>
+          <linearGradient id="body-l" x1="0.2" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stop-color="#e8fbff" stop-opacity="0.55" />
+            <stop offset="100%" stop-color="#4ec8e0" stop-opacity="0.12" />
+          </linearGradient>
+          <filter id="glow-l" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3.5" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <pattern id="hatch-l" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M0 10 L10 0" stroke="#9ff6ff" stroke-opacity="0.28" stroke-width="0.6" />
+          </pattern>
+        </defs>
+        <ellipse cx="210" cy="140" rx="118" ry="78" stroke="#7ef0ff" stroke-opacity="0.18" stroke-dasharray="3 10" class="satellite-ring" />
+        <g filter="url(#glow-l)" transform="rotate(22 210 140)">
+          <polygon points="28,92 168,78 168,202 28,168" fill="url(#wing-l)" stroke="#9ff6ff" stroke-width="1.2" />
+          <polygon points="28,92 168,78 168,202 28,168" fill="url(#hatch-l)" />
+          <polygon points="252,78 392,92 392,168 252,202" fill="url(#wing-l)" stroke="#9ff6ff" stroke-width="1.2" />
+          <polygon points="252,78 392,92 392,168 252,202" fill="url(#hatch-l)" />
+          <polygon points="176,108 210,88 244,108 244,172 210,192 176,172" fill="url(#body-l)" stroke="#e8fbff" stroke-width="1.6" />
+          <circle cx="210" cy="140" r="7" fill="#7ef0ff" fill-opacity="0.85" class="satellite-core" />
+        </g>
+      </svg>
+    </div>
+    <div class="sat sat-right" aria-hidden="true">
+      <svg viewBox="0 0 420 280" fill="none">
+        <defs>
+          <linearGradient id="wing-r" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#7ef0ff" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="#7ef0ff" stop-opacity="0.02" />
+          </linearGradient>
+          <linearGradient id="body-r" x1="0.2" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stop-color="#e8fbff" stop-opacity="0.55" />
+            <stop offset="100%" stop-color="#4ec8e0" stop-opacity="0.12" />
+          </linearGradient>
+          <pattern id="hatch-r" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M0 10 L10 0" stroke="#9ff6ff" stroke-opacity="0.28" stroke-width="0.6" />
+          </pattern>
+        </defs>
+        <ellipse cx="210" cy="140" rx="118" ry="78" stroke="#7ef0ff" stroke-opacity="0.18" stroke-dasharray="3 10" class="satellite-ring" />
+        <g transform="rotate(-18 210 140)">
+          <polygon points="28,92 168,78 168,202 28,168" fill="url(#wing-r)" stroke="#9ff6ff" stroke-width="1.2" />
+          <polygon points="28,92 168,78 168,202 28,168" fill="url(#hatch-r)" />
+          <polygon points="252,78 392,92 392,168 252,202" fill="url(#wing-r)" stroke="#9ff6ff" stroke-width="1.2" />
+          <polygon points="176,108 210,88 244,108 244,172 210,192 176,172" fill="url(#body-r)" stroke="#e8fbff" stroke-width="1.6" />
+          <circle cx="210" cy="140" r="7" fill="#7ef0ff" fill-opacity="0.85" class="satellite-core" />
+        </g>
+      </svg>
+    </div>
 
-  <aside class="lobby-report">
-    <div class="kicker">Rooms</div>
-    <p>Security — find issues</p>
-    <p>GraphDev — see what a fix would break</p>
-  </aside>
+    <header class="corp-header">
+      <a class="corp-logo" href="index.html">Orbit<small>Mission control</small></a>
+      <button class="menu-btn" type="button" id="menu-open">Menu <span aria-hidden="true">☰</span></button>
+    </header>
 
-  <div class="lobby-bar">
-    <span id="lobby-count">2 rooms</span>
-    <button type="button" class="lobby-enter" id="launch">Enter GraphDev</button>
+    <div class="hero-copy">
+      <h1>Automating code safety through graph intelligence.</h1>
+      <p class="lead">Orbit finds issues, shows what a fix would break, and waits for you to approve.</p>
+      <div class="cta-row">
+        <a class="cta" href="security.html">Explore Security <span>→</span></a>
+        <a class="cta" href="orbit.html">Explore GraphDev <span>→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="rooms" id="rooms">
+    <p class="kicker">Rooms</p>
+    <h2>Two rooms. One loop.</h2>
+    <p class="intro">Security finds what’s broken. GraphDev shows what else would break if you fixed it. A human signs off before anything ships.</p>
+    <h2>Diagnose, then treat.</h2>
+    <p class="intro">We scan for issues, walk the graph to see blast radius, draft a safer change, and wait for your approval before anything ships.</p>
+    <div class="card-grid">
+      <a href="security.html">
+        <h3>Security</h3>
+        <p>Run a check. See issues. Draft a safer change.</p>
+      </a>
+      <a href="orbit.html">
+        <h3>GraphDev</h3>
+        <p>See which files a change would break before you apply it.</p>
+      </a>
+      <a href="policypulse.html">
+        <h3>PolicyPulse</h3>
+        <p>Keep data where the rules say it belongs.</p>
+      </a>
+      <a href="precedent.html">
+        <h3>Precedent</h3>
+        <p>Onboarding from past mistakes, not a blank wiki.</p>
+      </a>
+    </div>
+  </section>
+
+  <div class="corp-menu" id="corp-menu">
+    <div class="corp-menu-top">
+      <p class="corp-logo">Orbit</p>
+      <button class="icon-close" type="button" id="menu-close" aria-label="Close">×</button>
+    </div>
+    <nav>
+      <a href="security.html">Security</a>
+      <a href="orbit.html">GraphDev</a>
+      <a href="#rooms" id="menu-rooms">Rooms</a>
+    </nav>
   </div>
 
-  <section class="panel agent-log hidden" id="agent-log"></section>
-  <div class="prompt-dock prompt-dock-mission">
-    <textarea id="agent-prompt" rows="6" placeholder="Try: run sql injector"></textarea>
-    <button class="dispatch-btn" id="agent-send" type="button">Dispatch</button>
+  <button class="chat-fab" id="chat-fab" type="button" aria-label="Open Mission Control">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7A2.5 2.5 0 0 1 16.5 16H12l-4 3.2V16H7.5A2.5 2.5 0 0 1 5 13.5v-7Z" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M8.5 9h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <div class="chat-panel" id="chat-panel" hidden>
+    <div class="chat-panel-head">
+      <span>Mission Control</span>
+      <b id="tick-state">IDLE</b>
+      <button type="button" id="chat-close" aria-label="Close chat">×</button>
+    </div>
+    <section class="agent-log" id="agent-log"></section>
+    <div class="chat-dock">
+      <textarea id="agent-prompt" rows="3" placeholder="Try: run sql injector"></textarea>
+      <button type="button" id="agent-send">Dispatch</button>
+    </div>
   </div>
-  <div class="ticker"><span>Drag · zoom · click a room</span><b id="tick-state">IDLE</b></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
   <script src="js/data.js"></script>
   <script src="js/sources.js"></script>
-  <script src="js/controls.js"></script>
   <script src="js/crew-ui.js"></script>
   <script src="js/agent-client.js"></script>
   <script src="js/sql-loop.js"></script>
-  <script src="js/mission.js"></script>
+  <script>
+    var menu = document.getElementById("corp-menu");
+    document.getElementById("menu-open").addEventListener("click", function () {
+      menu.classList.add("open");
+    });
+    document.getElementById("menu-close").addEventListener("click", function () {
+      menu.classList.remove("open");
+    });
+    document.getElementById("menu-rooms").addEventListener("click", function () {
+      menu.classList.remove("open");
+    });
+
+    var fab = document.getElementById("chat-fab");
+    var panel = document.getElementById("chat-panel");
+    var prompt = document.getElementById("agent-prompt");
+    function openChat() {
+      panel.hidden = false;
+      fab.classList.add("open");
+      fab.setAttribute("aria-expanded", "true");
+      setTimeout(function () { prompt.focus(); }, 40);
+    }
+    function closeChat() {
+      panel.hidden = true;
+      fab.classList.remove("open");
+      fab.setAttribute("aria-expanded", "false");
+    }
+    fab.addEventListener("click", function () {
+      if (panel.hidden) openChat();
+      else closeChat();
+    });
+    document.getElementById("chat-close").addEventListener("click", closeChat);
+
+    OrbitAgent.bindPrompt({
+      room: "mission",
+      sendId: "agent-send",
+      inputId: "agent-prompt",
+      logId: "agent-log",
+      replyInField: true,
+      statusId: "tick-state",
+      intercept: function (text) {
+        if (/sql/i.test(text) && window.SqlLoop) {
+          SqlLoop.start();
+          return true;
+        }
+        return false;
+      },
+      context: function () {
+        return { selectedPlanet: null, phase: "start", surface: "landing" };
+      },
+      onResult: function (data) {
+        CrewUI.proposeActions(data.actions || [], {
+          onScan: function (scan) {
+            sessionStorage.setItem(
+              "orbit-agent-scan",
+              JSON.stringify({
+                categories: scan.categories || [],
+                findingIds: (scan.findings || []).map(function (f) {
+                  return f.id;
+                }),
+              })
+            );
+            CrewUI.setActivity("You allowed Security. Opening Findings…", true);
+            location.href = "security.html?crew=1";
+          },
+          onGraph: function (graph) {
+            CrewUI.setActivity("You allowed GraphDev. Opening the universe…", true);
+            location.href = graph.href || (graph.findingId
+              ? "orbit.html?finding=" + encodeURIComponent(graph.findingId) + "&fix=1"
+              : "orbit.html");
+          },
+        });
+      },
+    });
+  </script>
 </body>
 </html>

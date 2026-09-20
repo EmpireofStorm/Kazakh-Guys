@@ -279,6 +279,11 @@
         approveFile();
       } else if (id === "fix-deny") {
         ev.preventDefault();
+        if (handlers && handlers.final) {
+          back.remove();
+          if (handlers.onDeny) handlers.onDeny(fix);
+          return;
+        }
         const wrap = back.querySelector("#fix-reason-wrap");
         if (wrap) wrap.classList.remove("hidden");
         if (handlers && handlers.onDeny) handlers.onDeny(fix);

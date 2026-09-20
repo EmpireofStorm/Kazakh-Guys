@@ -5,36 +5,52 @@
     });
   }
 
-  function radarOn() {
-    return localStorage.getItem("orbit-radar") === "1";
-  }
-
-  function lessons() {
+  function findingId() {
     try {
-      return JSON.parse(sessionStorage.getItem("orbit-lessons") || "[]");
+      return sessionStorage.getItem("orbit-loop-finding") || "F-SQL-1";
     } catch (e) {
-      return [];
+      return "F-SQL-1";
     }
   }
 
-  function note(title, detail) {
-    if (root.CrewUI && CrewUI.testNote) CrewUI.testNote(title, detail);
+  function currentFix(safe) {
+    const id = findingId();
+    const fixes = (root.OrbitData && OrbitData.FIXES) || {};
+    if (safe && fixes[id + "-SAFE"]) return fixes[id + "-SAFE"];
+    if (fixes[id]) return fixes[id];
+    try {
+      const stored = JSON.parse(sessionStorage.getItem("orbit-approved-patch") || "null");
+      if (stored) return stored;
+    } catch (e) {}
+    const f = (root.OrbitData.FINDINGS || []).find(function (x) {
+      return x.id === id;
+    });
+    if (!f) return null;
+    const mod = root.OrbitData.BY_ID && OrbitData.BY_ID[f.moduleId];
+    return {
+      title: f.title,
+      file: mod && mod.filePath ? mod.filePath[0] : f.moduleId,
+      why: "Impact is clear. Approve opens a draft only.",
+      flagged: f.description || "",
+      replacement: "Safer rewrite staged in Graph Dev.",
+      findingId: f.id,
+      moduleId: f.moduleId,
+    };
   }
 
   function askApprove() {
-    const fix = root.OrbitData && OrbitData.FIXES && OrbitData.FIXES["F-SQL-1-SAFE"];
+    const fix = currentFix(true) || currentFix(false);
     if (!fix || !root.CrewUI || !CrewUI.showFixReview) return;
     CrewUI.showFixReview(fix, {
       final: true,
       onApprove: function () {
         sessionStorage.removeItem("orbit-loop-notes");
-        note("Done", "You approved the change. It is a draft only.");
+        if (root.CrewUI.testNote) CrewUI.testNote("Done", "Draft only. Nothing was merged.");
       },
-      onLearn: function (reason) {
-        note("Trying again", reason || "Using your note.");
+      onLearn: function () {
         setTimeout(function () {
           start();
-        }, 900);
+        }, 700);
       },
     });
   }
@@ -43,82 +59,45 @@
     return String(location.pathname || "").indexOf("security") !== -1;
   }
 
-  async function spamSqlTests() {
-    const old = document.getElementById("center-wait");
-    if (old) old.remove();
-    const back = document.createElement("div");
-    back.id = "center-wait";
-    back.className = "center-wait-back";
-    back.innerHTML =
-      '<div class="center-wait" role="status">' +
-      "<h2>Running consecutive SQL tests</h2>" +
-      '<pre class="sql-spam" id="sql-spam-log"></pre>' +
-      "</div>";
-    document.body.appendChild(back);
-    const log = back.querySelector("#sql-spam-log");
-    function add(line) {
-      log.textContent += line + "\n";
-      log.scrollTop = log.scrollHeight;
-    }
-    const count = 12;
-    for (let i = 1; i <= count; i++) {
-      const secs = (Math.random() * 180000 + 0.2).toFixed(1);
-      if (i === 1) add("sql test 1");
-      else add("sql test " + i + " run " + secs + " seconds continue further");
-      await sleep(240 + Math.floor(Math.random() * 80));
-    }
-    add("sql tests complete — 1 issue found");
-    await sleep(500);
-    back.classList.add("out");
-    await sleep(280);
-    back.remove();
+  function onOrbit() {
+    return String(location.pathname || "").indexOf("orbit") !== -1;
   }
 
   async function start() {
-    if (!onSecurity()) {
-      location.href = "security.html?sqlloop=1";
+    const id = findingId();
+    const first = currentFix(false);
+    if (first) {
+      try {
+        sessionStorage.setItem("orbit-approved-patch", JSON.stringify(first));
+      } catch (e) {}
+    }
+    if (!onOrbit()) {
+      location.href =
+        "orbit.html?finding=" + encodeURIComponent(id) + "&patched=1&loop=1&pass=1";
       return;
     }
-    await spamSqlTests();
-    const last = lessons();
-    const tip = last.length ? last[last.length - 1].reason : "";
-    if (sessionStorage.getItem("orbit-loop-notes") !== "1") {
-      note("Running SQL check", "Looking for unsafe database queries.");
-      await sleep(400);
-      note("Test #1 finished", "Done in 0.8s — 1 issue found in lookup.ts");
-      await sleep(300);
-      sessionStorage.setItem("orbit-loop-notes", "1");
-    }
-    if (tip) note("Using your note", tip);
-    if (radarOn() && root.RadarUI) {
-      const hit = (root.OrbitData.FINDINGS || []).filter(function (f) {
-        return f.id === "F-SQL-1";
-      });
-      await new Promise(function (resolve) {
-        RadarUI.run(hit, ["sqli"], resolve);
-      });
-    }
-    note("Writing a fix", "Trying a safer query…");
-    await sleep(600);
-    try {
-      sessionStorage.setItem("orbit-approved-patch", JSON.stringify(OrbitData.FIXES["F-SQL-1"]));
-    } catch (e) {}
-    location.href = "orbit.html?finding=F-SQL-1&patched=1&loop=1&pass=1";
   }
 
   function afterGraphFail() {
-    note("GraphDev check", "2 files would break. Writing another fix…");
-    try {
-      sessionStorage.setItem("orbit-approved-patch", JSON.stringify(OrbitData.FIXES["F-SQL-1-SAFE"]));
-    } catch (e) {}
+    const id = findingId();
+    const next = currentFix(true) || currentFix(false);
+    if (next) {
+      try {
+        sessionStorage.setItem("orbit-approved-patch", JSON.stringify(next));
+      } catch (e) {}
+    }
+    if (root.CrewUI && CrewUI.setActivity) {
+      CrewUI.setActivity("Callers would break. Rewriting the fix…", true);
+    }
     setTimeout(function () {
-      location.href = "orbit.html?finding=F-SQL-1&patched=1&safe=1&loop=1&pass=2";
-    }, 1200);
+      location.href =
+        "orbit.html?finding=" + encodeURIComponent(id) + "&patched=1&safe=1&loop=1&pass=2";
+    }, 900);
   }
 
   function afterGraphOk() {
-    note("GraphDev check", "Looks good — 0 breaks. Your turn to approve.");
-    setTimeout(askApprove, 700);
+    if (root.CrewUI && CrewUI.setActivity) CrewUI.setActivity("", false);
+    setTimeout(askApprove, 500);
   }
 
   root.SqlLoop = {
@@ -126,6 +105,6 @@
     askApprove: askApprove,
     afterGraphFail: afterGraphFail,
     afterGraphOk: afterGraphOk,
-    radarOn: radarOn,
+    findingId: findingId,
   };
 })(window);

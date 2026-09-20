@@ -17,7 +17,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const app = express();
 app.use(express.json({ limit: "1mb" }));
-app.use(express.static(root));
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(root, "home.html"));
+});
+app.use(express.static(root, { index: false }));
 
 const als = new AsyncLocalStorage();
 function bag() {
@@ -137,7 +140,7 @@ const missionAgent = new Agent({
   name: "Mission Control",
   instructions:
     RULES +
-    " You are Mission Control. Dispatch ONE crew at a time and wait for the UI phase. Phase start: only call run_security_scan (mocked). Do not call open_in_graphdev yet. Phase after-security: the user already allowed Security. Do not scan again. Call open_in_graphdev for F-SQL-1 / user-service if this was a SQL category, and ask_graphdev to explain blast radius of the parameterized lookup patch. Never attack a live system.",
+    " You are Mission Control. Dispatch ONE crew at a time and wait for the UI phase. Phase start: only call run_security_scan (mocked). Do not call open_in_graphdev yet. Phase after-security: the user already allowed Security. Do not scan again. Call open_in_graphdev for F-SQL-1 / task-service if this was a SQL category, and ask_graphdev to explain blast radius of the parameterized search_tasks patch. Never attack a live system.",
   model: "gpt-4o-mini",
   tools: [scanTool, openGraph, blastTool, getCode, askSecurity, askGraph],
 });

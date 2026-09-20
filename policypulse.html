@@ -23,8 +23,8 @@
   <section class="panel left-panel" style="max-width:720px;width:min(720px,calc(100% - 56px))">
     <div class="sim-banner">Narrative stub — full PolicyPulse demo lives elsewhere</div>
     <h2>Law No. 94-VII · Kazakhstan data localization</h2>
-    <p>Regulatory change detected. contracts-svc DPA still allows EU processing of KZ personal data. Suggested redline: pin storage to kz-ala-1, forbid PII egress.</p>
-    <p class="muted">Same event fans into Orbit: region-config is the infra body that would actually break if you only redline the contract. <a href="security.html">Open Security</a> and scan hardcoded-secret exposure to pick up F-KZ-1, then Fix in Orbit.</p>
+    <p>Regulatory change detected. Tallybird still stores billing keys in source and ships search queries as concatenated SQL. Suggested redline: secrets from env, parameterized search.</p>
+    <p class="muted">Same event fans into Orbit: billing-service and task-service are the bodies that would actually break if you only redline the contract. <a href="security.html">Open Security</a> and run Hardcoded Secrets plus SQL Injection, then Open map.</p>
     <div class="diff">--- a/contracts/dpa.md
 +++ b/contracts/dpa.md
 - Personal data may be processed in the EU.

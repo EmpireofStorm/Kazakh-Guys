@@ -1,57 +1,59 @@
 (function (root) {
-  function blastRadius(originModuleId, modules) {
-    const byId = {};
+  function undirectedAdj(modules) {
+    const adj = {};
     modules.forEach((m) => {
-      byId[m.id] = m;
+      adj[m.id] = adj[m.id] || [];
     });
-    if (!byId[originModuleId]) {
+    modules.forEach((m) => {
+      (m.dependsOn || []).forEach((d) => {
+        if (!adj[d]) adj[d] = [];
+        if (adj[m.id].indexOf(d) === -1) adj[m.id].push(d);
+        if (adj[d].indexOf(m.id) === -1) adj[d].push(m.id);
+      });
+    });
+    return adj;
+  }
+
+  function blastRadius(originModuleId, modules) {
+    const adj = undirectedAdj(modules);
+    if (!adj[originModuleId]) {
       return { originModuleId, timestamp: Date.now(), affected: [] };
     }
-
     const dist = {};
-    const q = [originModuleId];
+    modules.forEach((m) => {
+      dist[m.id] = Infinity;
+    });
     dist[originModuleId] = 0;
-
+    const q = [originModuleId];
     while (q.length) {
       const cur = q.shift();
-      const d = dist[cur];
-      const node = byId[cur];
-      (node.dependents || []).forEach((depId) => {
-        if (dist[depId] === undefined) {
-          dist[depId] = d + 1;
-          q.push(depId);
+      (adj[cur] || []).forEach((nb) => {
+        if (dist[nb] === Infinity) {
+          dist[nb] = dist[cur] + 1;
+          q.push(nb);
         }
       });
     }
-
     const affected = modules.map((m) => {
       const d = dist[m.id];
       let severity = "dim";
       if (m.id === originModuleId) severity = "origin";
       else if (d === 1) severity = "red";
       else if (d === 2) severity = "amber";
-      return { moduleId: m.id, distance: d === undefined ? null : d, severity };
+      return { moduleId: m.id, distance: d === Infinity ? null : d, severity };
     });
-
-    return {
-      originModuleId,
-      timestamp: Date.now(),
-      affected,
-    };
+    return { originModuleId, timestamp: Date.now(), affected };
   }
 
   function impactWalk(originModuleId, modules) {
-    const byId = {};
-    modules.forEach((m) => {
-      byId[m.id] = m;
-    });
+    const adj = undirectedAdj(modules);
     const dist = {};
     const hops = [];
     const q = [originModuleId];
     dist[originModuleId] = 0;
     while (q.length) {
       const cur = q.shift();
-      ((byId[cur] && byId[cur].dependents) || []).forEach((depId) => {
+      (adj[cur] || []).forEach((depId) => {
         if (dist[depId] !== undefined) return;
         dist[depId] = dist[cur] + 1;
         q.push(depId);
@@ -76,21 +78,16 @@
   }
 
   function layoutPositions(modules) {
-    const rings = { infra: 6.5, core: 10.5, svc: 14.5, edge: 18.5 };
-    const grouped = { infra: [], core: [], svc: [], edge: [] };
-    modules.forEach((m) => grouped[m.layer].push(m));
     const pos = {};
-    Object.keys(grouped).forEach((layer) => {
-      const list = grouped[layer];
-      const r = rings[layer];
-      list.forEach((m, i) => {
-        const t = (i / Math.max(list.length, 1)) * Math.PI * 2 + (layer === "core" ? 0.4 : 0);
-        const y = (layer === "infra" ? -2.2 : layer === "edge" ? 2.6 : layer === "svc" ? 1.1 : -0.4) + Math.sin(i) * 0.55;
-        pos[m.id] = { x: Math.cos(t) * r, y, z: Math.sin(t) * r };
-      });
+    modules.forEach((m) => {
+      pos[m.id] = { x: m.x, y: m.y, z: m.z };
     });
     return pos;
   }
 
-  root.OrbitGraph = { blastRadius, impactWalk, counts, layoutPositions };
+  function edgeId(a, b) {
+    return a + "__" + b;
+  }
+
+  root.OrbitGraph = { blastRadius, impactWalk, counts, layoutPositions, undirectedAdj, edgeId };
 })(window);

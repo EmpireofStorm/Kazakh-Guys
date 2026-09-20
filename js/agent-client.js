@@ -87,7 +87,7 @@
         const ctx = typeof opts.context === "function" ? opts.context() : {};
         const data = await runAgent(opts.room, prompt, ctx);
         if (root.CrewUI) {
-          CrewUI.stopWait(who + " replied. Allow is above the prompt.");
+          CrewUI.stopWait(who + " replied.");
         }
         const out = plainText(data.output || "");
         if (inField) {

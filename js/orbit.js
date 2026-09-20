@@ -14,10 +14,10 @@
   }
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x050709, 0.028);
+  scene.background = new THREE.Color(0x050709);
   const first = viewSize();
-  const camera = new THREE.PerspectiveCamera(50, first.w / first.h, 0.1, 200);
-  camera.position.set(12, 8, 22);
+  const camera = new THREE.PerspectiveCamera(52, first.w / first.h, 0.1, 3000);
+  camera.position.set(90, 130, 480);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -27,76 +27,76 @@
 
   const controls = new OrbitCam(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.minDistance = 6;
-  controls.maxDistance = 48;
+  controls.minDistance = 80;
+  controls.maxDistance = 1400;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.5;
 
   const starGeo = new THREE.BufferGeometry();
-  const starCount = 1400;
+  const starCount = 500;
   const starPos = new Float32Array(starCount * 3);
   for (let i = 0; i < starCount; i++) {
-    starPos[i * 3] = (Math.random() - 0.5) * 260;
-    starPos[i * 3 + 1] = (Math.random() - 0.5) * 160;
-    starPos[i * 3 + 2] = (Math.random() - 0.5) * 260;
+    starPos[i * 3] = (Math.random() - 0.5) * 1600;
+    starPos[i * 3 + 1] = (Math.random() - 0.5) * 1600;
+    starPos[i * 3 + 2] = (Math.random() - 0.5) * 1600;
   }
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x4fd6ff, size: 0.35, opacity: 0.45, transparent: true })));
-
-  scene.add(new THREE.AmbientLight(0x4a5a6a, 0.7));
-  const key = new THREE.PointLight(0x4fd6ff, 1.1, 200);
-  key.position.set(20, 40, 30);
-  scene.add(key);
+  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x3a4b5c, size: 1.6, opacity: 0.6, transparent: true })));
 
   const modules = OrbitData.MODULES;
   const pos = OrbitGraph.layoutPositions(modules);
   const bodies = {};
   const rings = {};
-  const labelRoot = document.getElementById("labels");
 
-  function glowMat(color, opacity) {
-    return new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
+  function makeTextSprite(text) {
+    const c = document.createElement("canvas");
+    const ctx = c.getContext("2d");
+    const fontSize = 26;
+    ctx.font = fontSize + "px monospace";
+    const w = Math.ceil(ctx.measureText(text).width) + 24;
+    c.width = w;
+    c.height = fontSize + 18;
+    ctx.font = fontSize + "px monospace";
+    ctx.fillStyle = "rgba(220,232,240,0.85)";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, 12, c.height / 2);
+    const tex = new THREE.CanvasTexture(c);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    sprite.scale.set(w * 0.18, c.height * 0.18, 1);
+    return sprite;
   }
 
   modules.forEach((m) => {
     const g = new THREE.Group();
-    const r = 0.32 + m.criticalityScore * 0.22;
     const core = new THREE.Mesh(
-      new THREE.SphereGeometry(r, 10, 10),
+      new THREE.SphereGeometry(6, 24, 24),
       new THREE.MeshBasicMaterial({ color: COLORS.cyan })
     );
-    const halo = new THREE.Mesh(new THREE.SphereGeometry(r * 1.7, 10, 10), glowMat(COLORS.cyan, 0.18));
+    const halo = new THREE.Mesh(
+      new THREE.SphereGeometry(11.5, 24, 24),
+      new THREE.MeshBasicMaterial({
+        color: COLORS.cyan,
+        transparent: true,
+        opacity: 0.18,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      })
+    );
     g.add(core);
     g.add(halo);
     const p = pos[m.id];
     g.position.set(p.x, p.y, p.z);
-    g.userData = { id: m.id, core, halo, radius: r };
+    g.userData = { id: m.id, core: core, halo: halo, radius: 6 };
     scene.add(g);
     bodies[m.id] = g;
-
-    if (m.findings.length) {
-      const torus = new THREE.Mesh(
-        new THREE.TorusGeometry(r * 2.1, 0.035, 6, 24),
-        new THREE.MeshBasicMaterial({ color: COLORS.hazard })
-      );
-      torus.rotation.x = Math.PI / 2;
-      g.add(torus);
-      rings[m.id] = torus;
-    }
-
-    const lab = document.createElement("div");
-    lab.className = "label3d";
-    lab.textContent = m.name;
-    lab.dataset.id = m.id;
-    labelRoot.appendChild(lab);
+    const label = makeTextSprite(m.name);
+    label.position.set(0, -15, 0);
+    g.add(label);
   });
 
-  const laneMat = new THREE.LineBasicMaterial({ color: 0x3a4b5c, transparent: true, opacity: 0.55 });
+  const laneMat = new THREE.LineBasicMaterial({ color: 0x3a4b5c, transparent: true, opacity: 0.5 });
   const laneSet = [];
+  const edgeMeshMap = {};
   modules.forEach((m) => {
     m.dependsOn.forEach((dep) => {
       if (!pos[dep]) return;
@@ -108,30 +108,71 @@
       line.userData = { from: m.id, to: dep };
       scene.add(line);
       laneSet.push(line);
+      edgeMeshMap[OrbitGraph.edgeId(m.id, dep)] = line;
+      edgeMeshMap[OrbitGraph.edgeId(dep, m.id)] = line;
     });
   });
 
-  const pulse = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 24, 24),
-    new THREE.MeshBasicMaterial({ color: 0x4fd6ff, transparent: true, opacity: 0, wireframe: true })
+  const selectionRing = new THREE.Mesh(
+    new THREE.RingGeometry(8.5, 10.2, 40),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
   );
-  pulse.visible = false;
-  scene.add(pulse);
+  scene.add(selectionRing);
 
-  const tracer = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0x4fd6ff, transparent: true, opacity: 0.95 })
-  );
-  tracer.visible = false;
-  scene.add(tracer);
+  let activeFlowDots = [];
+  let scanTimers = [];
+  let cameraFlight = null;
+  let trailLines = [];
 
-  const lookRing = new THREE.Mesh(
-    new THREE.TorusGeometry(0.85, 0.04, 6, 24),
-    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })
-  );
-  lookRing.rotation.x = Math.PI / 2;
-  lookRing.visible = false;
-  scene.add(lookRing);
+  function flowPulse(line, hex) {
+    const attr = line.geometry.attributes.position;
+    const start = new THREE.Vector3(attr.getX(0), attr.getY(0), attr.getZ(0));
+    const end = new THREE.Vector3(attr.getX(1), attr.getY(1), attr.getZ(1));
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(2, 10, 10), new THREE.MeshBasicMaterial({ color: hex }));
+    scene.add(dot);
+    const t0 = performance.now();
+    function step() {
+      const t = ((performance.now() - t0) / 700) % 1;
+      dot.position.lerpVectors(start, end, t);
+      dot.userData.raf = requestAnimationFrame(step);
+    }
+    step();
+    return dot;
+  }
+
+  function ping3D(originVec) {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0x4fd6ff, wireframe: true, transparent: true, opacity: 0.7 })
+    );
+    mesh.position.copy(originVec);
+    scene.add(mesh);
+    const t0 = performance.now();
+    function step() {
+      const t = (performance.now() - t0) / 900;
+      if (t >= 1) {
+        scene.remove(mesh);
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+        return;
+      }
+      const s = 1 + t * 48;
+      mesh.scale.set(s, s, s);
+      mesh.material.opacity = 0.7 * (1 - t);
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function clearFlows() {
+    scanTimers.forEach(clearTimeout);
+    scanTimers = [];
+    activeFlowDots.forEach(function (d) {
+      cancelAnimationFrame(d.userData.raf);
+      scene.remove(d);
+    });
+    activeFlowDots = [];
+  }
 
   let selectedId = null;
   let stagedFinding = null;
@@ -139,6 +180,7 @@
   let riskAccepted = false;
   let riskNote = "";
   let scanBusy = false;
+  let scanDoneCb = null;
   let reveal = null;
   let tour = null;
   const urlParams = new URLSearchParams(location.search);
@@ -201,40 +243,37 @@
 
   function tint(b, col, halo) {
     b.userData.core.material.color.setHex(col);
-    if (b.userData.core.material.emissive) {
-      b.userData.core.material.emissive.setHex(col);
-      b.userData.core.material.emissiveIntensity = 0.5;
+    if (b.userData.halo) {
+      b.userData.halo.material.color.setHex(col);
+      b.userData.halo.material.opacity = halo;
     }
-    b.userData.halo.material.color.setHex(col);
-    b.userData.halo.material.opacity = halo;
   }
 
   function paintIdle() {
     modules.forEach((m) => {
-      const b = bodies[m.id];
-      tint(b, COLORS.cyan, selectedId === m.id ? 0.28 : 0.12);
+      const isSelected = selectedId === m.id;
+      tint(bodies[m.id], isSelected ? COLORS.origin : COLORS.cyan, isSelected ? 0.32 : 0.18);
     });
     laneSet.forEach((l) => {
       l.material.color.setHex(0x3a4b5c);
-      l.material.opacity = 0.45;
+      l.material.opacity = 0.5;
     });
+    if (selectedId && bodies[selectedId]) selectionRing.position.copy(bodies[selectedId].position);
   }
 
   function thoughtFor(id, severity) {
     const m = OrbitData.BY_ID[id];
     const name = m ? m.name : id;
     if (severity === "origin") {
-      return tour && tour.safe
-        ? "Still on " + name + ". lookup(id) is unchanged for callers; the bind stays inside this module."
-        : "Still on " + name + " after 5s. The $1 bind is staged — tracing who still treats lookup as a concatenated SQL string.";
+      return tour && tour.safe ? name + " — rewrite stays inside this file." : "Checking who uses " + name + ".";
     }
     if (tour && tour.safe) {
-      return name + " still calls lookup(id). Same contract, so GraphDev does not flag a break.";
+      return name + " still matches. No break.";
     }
     if (severity === "red") {
-      return name + " calls this lookup directly. Flagging will-break: callers may still wrap the old string SQL.";
+      return name + " uses this file — would break.";
     }
-    return name + " is one hop further. Needs review of the response shape, not an immediate rewrite.";
+    return name + " is nearby.";
   }
 
   function setHopDesc(step, why) {
@@ -341,15 +380,7 @@
         glow = 0.72;
       }
       const b = bodies[m.id];
-      tint(b, col, glow > 0.5 ? 0.25 : 0.12);
-      const lab = labelRoot.querySelector('[data-id="' + m.id + '"]');
-      lab.className =
-        "label3d " +
-        (a.severity === "red" && unlocked.red
-          ? "red"
-          : a.severity === "amber" && unlocked.amber
-            ? "amber"
-            : "");
+      tint(b, col, glow > 0.5 ? 0.3 : 0.12);
     });
     laneSet.forEach((l) => {
       const fa = map[l.userData.from];
@@ -379,7 +410,7 @@
     if (!m) return;
     els.title.textContent = m.name;
     els.paths.textContent = m.filePath.join(" · ");
-    els.run.disabled = false;
+    if (els.run) els.run.disabled = false;
     els.accept.disabled = true;
     els.apply.disabled = true;
     if (finding) {
@@ -387,7 +418,10 @@
       els.sev.textContent = finding.severity + " · " + finding.id + " · staged patch";
       els.sev.className = "sev " + finding.severity;
       els.desc.textContent = finding.description;
-      els.patch.textContent = finding.suggestedFix;
+      els.patch.textContent =
+        finding.suggestedFix ||
+        (OrbitData.FIXES && OrbitData.FIXES[finding.id] && OrbitData.FIXES[finding.id].replacement) ||
+        "";
       OrbitData.setFinding(finding.id, { status: "fix-drafted" });
       els.tick.textContent = "PATCH STAGED FROM SECURITY · " + finding.id;
       els.tickState.textContent = "STAGED";
@@ -408,7 +442,7 @@
       els.tickState.textContent = "LOCK";
     }
     paintIdle();
-    els.hint.textContent = "Scan treats this change as BFS origin. Apply stays locked until then.";
+    els.hint.textContent = "Impact runs after the fix loop. You still approve.";
     showModuleCode(m);
   }
 
@@ -457,16 +491,18 @@
     }
   }
 
-  function runScan() {
+  function runScan(done) {
     if (!selectedId || scanBusy) return;
+    if (typeof done === "function") scanDoneCb = done;
     scanBusy = true;
-    els.run.disabled = true;
+    if (els.run) els.run.disabled = true;
     els.apply.disabled = true;
     els.readout.classList.add("hidden");
     hideThoughts();
+    clearFlows();
+    paintIdle();
     const safe = isSafePatch();
     const raw = OrbitGraph.blastRadius(selectedId, modules);
-    const hops = OrbitGraph.impactWalk(selectedId, modules);
     const result = safe
       ? {
           originModuleId: raw.originModuleId,
@@ -479,159 +515,116 @@
       : raw;
     lastScan = result;
     riskAccepted = false;
-    tour = {
-      result: result,
-      hops: hops,
-      hopIndex: -1,
-      revealed: {},
-      phase: "look",
-      lookingId: selectedId,
-      lookStart: performance.now(),
-      thoughtShown: false,
-      beamFrom: null,
-      beamTo: null,
-      beamStart: 0,
-      safe: safe,
-    };
-    tour.revealed[selectedId] = "origin";
     reveal = null;
-    tracer.visible = false;
     const origin = bodies[selectedId];
-    pulse.position.copy(origin.position);
-    pulse.visible = true;
-    pulse.scale.set(1, 1, 1);
-    pulse.material.opacity = 0.45;
-    lookRing.position.copy(origin.position);
-    lookRing.scale.setScalar(Math.max(origin.userData.radius, 1.2));
-    lookRing.visible = true;
-    els.tick.textContent = "LIVE TRACK · " + selectedId.toUpperCase();
-    els.tickState.textContent = "LOOK";
-    setHopDesc(
-      "Checking " + selectedId,
-      safe ? "Seeing who uses this file. Should stay green." : "Seeing who uses this file."
+    ping3D(origin.position);
+    els.tick.textContent = "SCAN · " + selectedId.toUpperCase();
+    els.tickState.textContent = "PING";
+    setHopDesc("Checking " + selectedId, safe ? "Should stay green." : "Direct neighbors, then one hop out.");
+
+    const dist = {};
+    result.affected.forEach(function (a) {
+      dist[a.moduleId] = a.severity === "origin" ? 0 : a.distance;
+    });
+    const redIds = [];
+    const amberIds = [];
+    const dimIds = [];
+    modules.forEach(function (n) {
+      if (n.id === selectedId) return;
+      if (safe) dimIds.push(n.id);
+      else if (dist[n.id] === 1) redIds.push(n.id);
+      else if (dist[n.id] === 2) amberIds.push(n.id);
+      else dimIds.push(n.id);
+    });
+
+    if (safe) {
+      scanTimers.push(
+        setTimeout(function () {
+          dimIds.forEach(function (id) {
+            tint(bodies[id], COLORS.slate, 0.08);
+          });
+          finishReveal(result);
+        }, 500)
+      );
+      return;
+    }
+
+    scanTimers.push(
+      setTimeout(function () {
+        redIds.forEach(function (id) {
+          tint(bodies[id], COLORS.red, 0.34);
+        });
+        laneSet.forEach(function (line) {
+          const a = line.userData.from;
+          const b = line.userData.to;
+          if (Math.min(dist[a], dist[b]) === 0) {
+            line.material.color.setHex(0xff4b4b);
+            line.material.opacity = 0.9;
+            activeFlowDots.push(flowPulse(line, 0xff4b4b));
+          }
+        });
+      }, 450)
     );
-    paintLive();
+    scanTimers.push(
+      setTimeout(function () {
+        amberIds.forEach(function (id) {
+          tint(bodies[id], COLORS.amber, 0.3);
+        });
+        laneSet.forEach(function (line) {
+          const a = line.userData.from;
+          const b = line.userData.to;
+          if (Math.min(dist[a], dist[b]) === 1) {
+            line.material.color.setHex(0xffb84d);
+            line.material.opacity = 0.85;
+            activeFlowDots.push(flowPulse(line, 0xffb84d));
+          }
+        });
+      }, 950)
+    );
+    scanTimers.push(
+      setTimeout(function () {
+        dimIds.forEach(function (id) {
+          tint(bodies[id], COLORS.slate, 0.08);
+        });
+        finishReveal(result);
+      }, 1300)
+    );
   }
 
   function finishReveal(result) {
     scanBusy = false;
-    els.run.disabled = false;
-    pulse.visible = false;
-    tracer.visible = false;
-    lookRing.visible = false;
-    tour = null;
+    if (els.run) els.run.disabled = false;
     hideThoughts();
     const unlocked = { red: true, amber: true };
     paintScan(result, unlocked);
     const c = OrbitGraph.counts(result);
-    const reds = result.affected.filter((a) => a.severity === "red").map((a) => a.moduleId);
-    const ambers = result.affected.filter((a) => a.severity === "amber").map((a) => a.moduleId);
     const dims = result.affected.filter((a) => a.severity === "dim").length;
     els.readout.classList.remove("hidden");
     els.origin.textContent = result.originModuleId;
-    els.red.textContent = String(c.red) + (reds.length ? " · " + reds.join(", ") : "");
-    els.amber.textContent = String(c.amber) + (ambers.length ? " · " + ambers.join(", ") : "");
+    els.red.textContent = String(c.red);
+    els.amber.textContent = String(c.amber);
     els.dim.textContent = String(dims);
-    els.list.textContent = c.flagged
-      ? "Red = this change would break that file."
-      : "Looks safe. Nothing else would break.";
+    els.list.textContent = c.flagged ? "Red nodes would break." : "Safe to draft.";
     els.tick.textContent = c.flagged ? "WOULD BREAK" : "LOOKS SAFE";
     els.tickState.textContent = "DONE";
-    setHopDesc("Check done", c.flagged ? "Two files would break." : "No breaks.");
+    setHopDesc(c.flagged ? "Would break" : "Looks safe", c.flagged ? c.red + " direct · " + c.amber + " nearby" : "No other files break.");
     updateApplyLock();
     reveal = null;
+    const cb = scanDoneCb;
+    scanDoneCb = null;
+    if (cb) cb(result);
+    if (document.body.classList.contains("fix-mode")) return;
     if (loopPass === "1") {
-      if (window.SqlLoop) SqlLoop.afterGraphFail();
+      if (c.flagged && window.SqlLoop) SqlLoop.afterGraphFail();
+      else if (window.SqlLoop) SqlLoop.afterGraphOk();
       return;
     }
     if (loopPass === "2") {
       if (window.SqlLoop) SqlLoop.afterGraphOk();
-      return;
     }
-    writePushSummary(result, reds, ambers, c);
-    offerCompatRewrite(c);
   }
 
-  function offerCompatRewrite(c) {
-    if (!c.flagged || isSafePatch() || !window.CrewUI) return;
-    try {
-      sessionStorage.setItem("orbit-next-step", "sql-compat");
-    } catch (e) {}
-    CrewUI.toast({
-      bot: "Security",
-      wants: "rewrite the SQL so GraphDev callers do not implode",
-      detail: "Second pass keeps lookup(id) and the same row shape. Bind stays inside user-service.",
-      onAllow: function () {
-        try {
-          sessionStorage.removeItem("orbit-next-step");
-        } catch (e) {}
-        location.href = "security.html?compat=1";
-      },
-    });
-  }
-
-  function fallbackPushSummary(origin, reds, ambers, flagged) {
-    const redList = reds.length ? reds.join(", ") : "none";
-    const amberList = ambers.length ? ambers.join(", ") : "none";
-    if (!flagged) {
-      return (
-        "If you Change the code on this graph-safe rewrite, GraphDev sees callers still using lookup(id). Bound SQL stays inside " +
-        origin +
-        ". Change the code opens a pull request only — nothing merges or deploys until a human reviews it."
-      );
-    }
-    return (
-      "If you Change the code on this first lookup patch, GraphDev expects breakage in the direct callers: " +
-      redList +
-      ". Those modules still treat user lookup as string SQL. Change nonetheless would push anyway with a risk note. The cleaner next step is Security rewriting lookup so the contract holds and the graph stays green. One hop further: " +
-      amberList +
-      ". Nothing merges until you sign off."
-    );
-  }
-
-  function writePushSummary(result, reds, ambers, c) {
-    const origin = result.originModuleId;
-    const fallback = fallbackPushSummary(origin, reds, ambers, c.flagged);
-    setHopDesc("Writing push summary…", "GraphDev is briefing Mission Control on what Apply would actually do.");
-    const prompt =
-      "Write a short Mission Control briefing in plain prose (no markdown, no bullets). Explain what happens IF the human Applies this staged patch. Origin module: " +
-      origin +
-      ". Will-break (direct dependents): " +
-      (reds.join(", ") || "none") +
-      ". Needs review (one hop): " +
-      (ambers.join(", ") || "none") +
-      ". Explain Change the code vs Change nonetheless. If callers would break, tell them to send Security a graph-safe rewrite that keeps lookup(id). 4-6 sentences.";
-    function save(text) {
-      const clean = OrbitAgent.plainText ? OrbitAgent.plainText(text) : text;
-      try {
-        sessionStorage.setItem("orbit-push-summary", clean);
-      } catch (e) {}
-      setHopDesc("Push summary ready", clean);
-      const box = document.getElementById("agent-prompt");
-      if (box) {
-        box.value = clean;
-        box.dataset.reply = "1";
-      }
-    }
-    if (!window.OrbitAgent || !OrbitAgent.runAgent) {
-      save(fallback);
-      return;
-    }
-    OrbitAgent.runAgent("graphdev", prompt, {
-      phase: "summarize-push",
-      originModuleId: origin,
-      willBreak: reds,
-      needsReview: ambers,
-    })
-      .then(function (data) {
-        save(data.output || fallback);
-      })
-      .catch(function () {
-        save(fallback);
-      });
-  }
-
-  els.run.addEventListener("click", runScan);
+  if (els.run) els.run.addEventListener("click", runScan);
 
   els.accept.addEventListener("click", function () {
     els.riskModal.classList.remove("hidden");
@@ -686,6 +679,7 @@
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   renderer.domElement.addEventListener("pointerdown", function (ev) {
+    if (document.body.classList.contains("fix-mode")) return;
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
@@ -708,125 +702,228 @@
   window.addEventListener("resize", fit);
   if (window.ResizeObserver) new ResizeObserver(fit).observe(mount);
 
-  const v = new THREE.Vector3();
-  function projectLabels() {
-    modules.forEach((m) => {
-      const lab = labelRoot.querySelector('[data-id="' + m.id + '"]');
-      v.copy(bodies[m.id].position).project(camera);
-      const { w, h } = viewSize();
-      const x = (v.x * 0.5 + 0.5) * w;
-      const y = (-v.y * 0.5 + 0.5) * h;
-      lab.style.left = x + "px";
-      lab.style.top = y + "px";
-      lab.style.display = v.z > 1 ? "none" : "block";
+  function flyCameraTo(nodeId, duration) {
+    const n = bodies[nodeId];
+    if (!n) return;
+    const nodePos = n.position.clone();
+    const lookAt = nodePos.clone().multiplyScalar(0.4);
+    const viewDir = new THREE.Vector3(60, 90, 340).normalize();
+    const camPos = lookAt.clone().add(viewDir.multiplyScalar(480));
+    cameraFlight = {
+      fromPos: camera.position.clone(),
+      toPos: camPos,
+      fromTarget: controls.target.clone(),
+      toTarget: lookAt,
+      start: performance.now(),
+      duration: duration || 900,
+    };
+  }
+
+  function stepFlight() {
+    if (!cameraFlight) return false;
+    const ft = Math.min((performance.now() - cameraFlight.start) / cameraFlight.duration, 1);
+    const e = ft < 0.5 ? 2 * ft * ft : 1 - Math.pow(-2 * ft + 2, 2) / 2;
+    camera.position.lerpVectors(cameraFlight.fromPos, cameraFlight.toPos, e);
+    controls.target.lerpVectors(cameraFlight.fromTarget, cameraFlight.toTarget, e);
+    camera.lookAt(controls.target);
+    if (ft >= 1) {
+      cameraFlight = null;
+      if (controls.syncFromCamera) controls.syncFromCamera();
+    }
+    return true;
+  }
+
+  function drawTrail(fromId, toId, hex) {
+    const a = bodies[fromId];
+    const b = bodies[toId];
+    if (!a || !b) return;
+    const geo = new THREE.BufferGeometry().setFromPoints([a.position.clone(), b.position.clone()]);
+    const mat = new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 0.95 });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    trailLines.push(line);
+  }
+
+  function clearTrail() {
+    trailLines.forEach(function (l) {
+      scene.remove(l);
+      l.geometry.dispose();
+      l.material.dispose();
+    });
+    trailLines = [];
+  }
+
+  function categoryLabel(id) {
+    const cat = (OrbitData.CATEGORIES || []).find(function (c) {
+      return c.id === id;
+    });
+    return cat ? cat.label : id;
+  }
+
+  function nextIssueLabel(finding) {
+    const next = finding && OrbitData.nextOpenFinding ? OrbitData.nextOpenFinding(finding.id) : null;
+    if (!next) return { next: null, text: "All issues in this scan are done." };
+    return {
+      next: next,
+      text: "Next: " + categoryLabel(next.attackCategory) + " — " + next.moduleId,
+    };
+  }
+
+  function closeAppliedModal() {
+    const modal = document.getElementById("applied-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  function startFixFor(finding) {
+    closeAppliedModal();
+    if (!finding) return;
+    try {
+      sessionStorage.setItem("orbit-loop-finding", finding.id);
+    } catch (e) {}
+    stagedFinding = finding;
+    selectModule(finding.moduleId, finding);
+    if (history.replaceState) {
+      history.replaceState({}, "", "orbit.html?finding=" + encodeURIComponent(finding.id) + "&fix=1");
+    }
+    if (window.FixExplorer) FixExplorer.open(finding.moduleId, finding);
+  }
+
+  function showFollowup(opts) {
+    const modal = document.getElementById("applied-modal");
+    if (!modal) return;
+    const approved = !!opts.approved;
+    const finding = opts.finding;
+    const info = nextIssueLabel(finding);
+    const banner = document.getElementById("applied-banner");
+    const title = document.getElementById("applied-title");
+    const nextEl = document.getElementById("applied-next");
+    const pathEl = document.getElementById("applied-path");
+    const body = document.getElementById("applied-body");
+    const scroll = document.getElementById("applied-scroll");
+    const nextBtn = document.getElementById("applied-next-btn");
+    pathEl.textContent = (opts.moduleId || finding.moduleId) + "  ·  " + (opts.file || "");
+    banner.classList.toggle("skipped", !approved);
+    title.textContent = approved ? "Fix applied and saved" : "Fix not approved";
+    nextEl.textContent = info.text;
+    if (approved && opts.code) {
+      scroll.style.display = "block";
+      body.textContent = opts.code;
+    } else {
+      scroll.style.display = approved ? "block" : "none";
+      body.textContent = opts.code || "";
+    }
+    nextBtn.style.display = info.next ? "block" : "none";
+    nextBtn.onclick = function () {
+      startFixFor(info.next);
+    };
+    modal.classList.add("active");
+  }
+
+  function silentDraft(finding, fix) {
+    if (!finding) return;
+    stagedFinding = finding;
+    const prId = "PR-" + (1800 + OrbitData.loadPrs().length + 1);
+    OrbitData.savePr({
+      id: prId,
+      findingId: finding.id,
+      body: (fix && (fix.replacement || fix.patchedFile)) || "",
+      at: Date.now(),
+    });
+    OrbitData.setFinding(finding.id, { status: "pr-opened", prId: prId });
+    els.tick.textContent = "PR OPENED · MERGE IS OFF";
+    els.tickState.textContent = "REVIEW";
+  }
+
+  function showVerifiedFix(moduleId, finding, adopted) {
+    const catalog =
+      (finding && OrbitData.FIXES && (OrbitData.FIXES[finding.id] || OrbitData.FIXES[finding.id + "-SAFE"])) ||
+      {};
+    const mod = OrbitData.BY_ID[moduleId];
+    const file = catalog.file || (mod && mod.filePath && mod.filePath[0]) || moduleId;
+    const sources = OrbitData.SOURCES || {};
+    const flagged = catalog.flagged || sources[file] || (finding && finding.description) || "";
+    const replacement =
+      (adopted && adopted.patch) || catalog.replacement || catalog.patchedFile || "";
+    const payload = {
+      title: (finding && finding.title) || catalog.title || "Verified fix",
+      file: file,
+      why: catalog.why || "Verified against the graph and tests. Approve opens a draft only.",
+      flagged: flagged,
+      replacement: replacement,
+      patchedFile: (adopted && adopted.patch) || catalog.patchedFile || replacement,
+      findingId: finding && finding.id,
+      moduleId: moduleId,
+      safe: true,
+    };
+    if (!window.CrewUI || !CrewUI.showFixReview) return;
+    CrewUI.showFixReview(payload, {
+      final: true,
+      onApprove: function (fix) {
+        try {
+          sessionStorage.setItem("orbit-approved-patch", JSON.stringify(fix));
+        } catch (e) {}
+        silentDraft(finding, fix);
+        showFollowup({
+          approved: true,
+          finding: finding,
+          moduleId: moduleId,
+          file: file,
+          code: replacement,
+        });
+      },
+      onDeny: function () {
+        if (finding) OrbitData.setFinding(finding.id, { status: "skipped" });
+        showFollowup({
+          approved: false,
+          finding: finding,
+          moduleId: moduleId,
+          file: file,
+          code: "",
+        });
+      },
     });
   }
 
+  const appliedClose = document.getElementById("applied-close");
+  const appliedLobby = document.getElementById("applied-lobby");
+  if (appliedClose) appliedClose.addEventListener("click", closeAppliedModal);
+  if (appliedLobby) {
+    appliedLobby.addEventListener("click", function () {
+      location.href = "index.html";
+    });
+  }
+
+  window.OrbitViz = {
+    flyCameraTo: flyCameraTo,
+    ping: function (id) {
+      if (bodies[id]) ping3D(bodies[id].position);
+    },
+    setNodeColor: function (id, hex, opacity) {
+      if (bodies[id]) tint(bodies[id], hex, opacity);
+    },
+    drawTrail: drawTrail,
+    clearTrail: clearTrail,
+    setControlsEnabled: function (on) {
+      controls.enabled = !!on;
+      if (on) controls.autoRotate = false;
+    },
+    resize: fit,
+    showVerifiedFix: showVerifiedFix,
+    runScan: runScan,
+  };
+
   function animate(now) {
     requestAnimationFrame(animate);
-    controls.update();
-    Object.keys(rings).forEach((id) => {
-      rings[id].rotation.z = now * 0.001;
-      rings[id].scale.setScalar(1 + Math.sin(now * 0.004) * 0.06);
-    });
-    if (tour) {
-      const looking = bodies[tour.lookingId];
-      if (looking && controls.target) controls.target.lerp(looking.position, 0.045);
-      lookRing.rotation.z = now * 0.003;
-      if (looking) {
-        lookRing.position.copy(looking.position);
-        pulse.position.copy(looking.position);
-        pulse.scale.setScalar(1 + Math.sin(now * 0.006) * 0.15);
-      }
-      if (tour.phase === "look") {
-        const dt = now - tour.lookStart;
-        const hop = tour.hopIndex >= 0 ? tour.hops[tour.hopIndex] : null;
-        const sev = hop ? hop.severity : "origin";
-        if (!loopPass && !tour.thoughtShown && dt > 5000) {
-          tour.thoughtShown = true;
-          showThoughts(tour.lookingId, thoughtFor(tour.lookingId, sev));
-        }
-        const dwell = loopPass
-          ? hop
-            ? 480
-            : 640
-          : tour.safe
-            ? hop
-              ? 1200
-              : 2000
-            : hop
-              ? hop.to === "api-gateway"
-                ? 5600
-                : 1400
-              : 5400;
-        if (dt > dwell) {
-          const next = tour.hopIndex + 1;
-          if (next >= tour.hops.length) {
-            finishReveal(tour.result);
-          } else {
-            const nx = tour.hops[next];
-            tour.hopIndex = next;
-            tour.phase = "beam";
-            tour.beamFrom = nx.from;
-            tour.beamTo = nx.to;
-            tour.beamStart = now;
-            tracer.visible = true;
-            lookRing.visible = false;
-            hideThoughts();
-            els.tick.textContent = "BEAM · " + nx.from + " → " + nx.to;
-            els.tickState.textContent = "JUMP";
-            setHopDesc("Next: " + nx.to, nx.severity === "red" ? "Uses this file directly." : "One step away.");
-            paintLive();
-          }
-        }
-      } else if (tour.phase === "beam") {
-        const fromB = bodies[tour.beamFrom];
-        const toB = bodies[tour.beamTo];
-        const u = Math.min(1, (now - tour.beamStart) / 780);
-        if (fromB && toB) tracer.position.lerpVectors(fromB.position, toB.position, u);
-        const hop = tour.hops[tour.hopIndex];
-        tracer.material.color.setHex(hop && hop.severity === "red" ? COLORS.red : COLORS.amber);
-        if (controls.target && toB) controls.target.lerp(toB.position, 0.06);
-        if (u >= 1) {
-          if (hop) tour.revealed[hop.to] = tour.safe ? "ok" : hop.severity;
-          tour.phase = "look";
-          tour.lookingId = tour.beamTo;
-          tour.lookStart = now;
-          tour.thoughtShown = false;
-          tracer.visible = false;
-          lookRing.visible = true;
-          const dest = bodies[tour.lookingId];
-          if (dest) lookRing.scale.setScalar(Math.max(dest.userData.radius, 1.2));
-          els.tick.textContent = "LOOKING · " + tour.lookingId.toUpperCase();
-          els.tickState.textContent = "LOOK";
-          setHopDesc(
-            tour.lookingId,
-            tour.safe ? "OK" : hop && hop.severity === "red" ? "Would break" : "Check this"
-          );
-          const destMod = OrbitData.BY_ID[tour.lookingId];
-          if (destMod) showModuleCode(destMod);
-          paintLive();
-        }
-      }
-    } else if (reveal) {
-      const dt = now - reveal.t0;
-      pulse.scale.setScalar(1 + dt / 180);
-      pulse.material.opacity = Math.max(0, 0.55 - dt / 2200);
-      if (reveal.phase === "delay" && dt > 420) {
-        reveal.phase = "red";
-        reveal.unlocked.red = true;
-        paintScan(reveal.result, reveal.unlocked);
-        els.tick.textContent = "RED REVEAL · DIRECT DEPENDENTS";
-      } else if (reveal.phase === "red" && dt > 980) {
-        reveal.phase = "amber";
-        reveal.unlocked.amber = true;
-        paintScan(reveal.result, reveal.unlocked);
-        els.tick.textContent = "AMBER REVEAL · ONE HOP FURTHER";
-      } else if (reveal.phase === "amber" && dt > 1500) {
-        finishReveal(reveal.result);
-      }
+    if (!stepFlight()) controls.update();
+    if (selectedId && bodies[selectedId]) {
+      selectionRing.position.copy(bodies[selectedId].position);
+      selectionRing.lookAt(camera.position);
     }
-    projectLabels();
+    const t = now * 0.002;
+    modules.forEach(function (n) {
+      const s = 1 + Math.sin(t + n.x * 0.01) * 0.08;
+      if (bodies[n.id] && bodies[n.id].userData.halo) bodies[n.id].userData.halo.scale.set(s, s, s);
+    });
     renderer.render(scene, camera);
   }
   requestAnimationFrame(animate);
@@ -836,10 +933,14 @@
     const f = OrbitData.FINDINGS.find((x) => x.id === fid);
     if (f) {
       selectModule(f.moduleId, f);
-      runScan();
+      if (urlParams.get("fix") === "1" && window.FixExplorer) {
+        FixExplorer.open(f.moduleId, f);
+      } else {
+        runScan();
+      }
     }
   } else {
-    paintIdle();
+    selectModule("task-service", null);
   }
 
   OrbitAgent.bindPrompt({

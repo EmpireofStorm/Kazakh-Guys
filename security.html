@@ -8,37 +8,43 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/hud.css" />
 </head>
-<body>
+<body class="security-body">
   <div class="frame-corner tl"></div>
   <div class="frame-corner tr"></div>
   <div class="frame-corner bl"></div>
   <div class="frame-corner br"></div>
   <header class="topbar">
-    <div class="brand">SECURITY<small>find issues</small></div>
+    <div class="brand">SECURITY<small>attack categories</small></div>
     <nav class="nav">
-      <a href="index.html">Mission Control</a>
+      <a href="index.html">Hub</a>
       <a class="active" href="security.html">Security</a>
-      <a href="orbit.html">Map</a>
+      <a href="orbit.html">Graph Dev</a>
     </nav>
   </header>
-  <aside class="panel left-panel">
-    <h2>What to check</h2>
+  <aside class="panel left-panel security-left">
+    <h2>Attack surface scan</h2>
+    <p class="muted">Select which categories to test, then run the scan.</p>
     <div class="cats" id="cats"></div>
     <label class="radar-switch"><input type="checkbox" id="radar-toggle" /> Show radar</label>
     <div class="actions">
-      <button class="primary" id="run-scan" type="button">Run check</button>
+      <button class="primary" id="run-scan" type="button">Run security scan</button>
+    </div>
+    <div class="security-agent">
+      <textarea id="agent-prompt" rows="2" placeholder="Or ask Security…"></textarea>
+      <button class="primary" id="agent-send" type="button">Send</button>
     </div>
   </aside>
-  <section class="panel right-panel">
-    <h2>Findings</h2>
-    <p class="muted" id="findings-empty">Nothing yet. Pick a check and run it.</p>
+  <section class="panel right-panel security-right">
+    <div class="findings-header">
+      <h2>Findings</h2>
+      <span class="muted" id="findings-count">0 results</span>
+    </div>
+    <p class="muted hidden" id="scan-run-note">Running each category's tests, one at a time.</p>
+    <div class="scan-run-area hidden" id="scan-run-area"></div>
+    <p class="muted" id="findings-empty">Nothing yet — run a scan to populate this list.</p>
     <div id="findings"></div>
   </section>
-  <section class="panel agent-log" id="agent-log"></section>
-  <div class="prompt-dock prompt-dock-security">
-    <textarea id="agent-prompt" rows="2" placeholder="Try: run sql injector"></textarea>
-    <button class="primary" id="agent-send" type="button">Send</button>
-  </div>
+  <section class="panel agent-log hidden" id="agent-log"></section>
   <div class="ticker"><span id="tick">Pick a check</span><b id="tick-state">IDLE</b></div>
   <script src="js/data.js"></script>
   <script src="js/sources.js"></script>
